@@ -8,18 +8,25 @@
 #include <cstdlib>
 #include <algorithm>
 #include <cstring>
+#include <cctype>
+#include <string>
+#include <cstdlib>
 using namespace std;
 
 const int GRID_SIZE = 9;
 
 int grid[GRID_SIZE][GRID_SIZE];
 int fullGrid[GRID_SIZE][GRID_SIZE];
+int checkGrid[GRID_SIZE][GRID_SIZE];
 vector<int> numberList = {1, 2, 3, 4, 5, 6, 7, 8, 9};
 
+string parseArrayToString();
+bool parseStringToGrid();
+bool isSolved(int myGrid[GRID_SIZE][GRID_SIZE]);
 bool isValid(int grid[GRID_SIZE][GRID_SIZE], int row, int col, int num);
 bool fillGrid(int grid[GRID_SIZE][GRID_SIZE]);
 bool solve(int grid[GRID_SIZE][GRID_SIZE]);
-bool solve(int grid[GRID_SIZE][GRID_SIZE]);
+//bool solve(int grid[GRID_SIZE][GRID_SIZE]);
 void removeNumbers(int grid[GRID_SIZE][GRID_SIZE], int attempts);
 void printGrid(int grid[GRID_SIZE][GRID_SIZE]);
 string convertGridToString(int grid[GRID_SIZE][GRID_SIZE]);
@@ -211,6 +218,77 @@ string convertHighlightToString(int grid[GRID_SIZE][GRID_SIZE]) {
     return result;
 }
 
+string parseArrayToString() {
+    string input = ""; // Initialize an empty string
+    for (int i = 0; i < 81; i++) {
+        input += sudokuPuzzle[i]; // Append each string element
+    }
+    return input;
+}
+
+
+bool parseStringToGrid(string input) {
+    /*
+    if (sudokuPuzzle.length() != 81) {
+        cerr << "Input string is not the correct length (81 characters)." << endl;
+        return false;
+    }
+    */
+
+    int index = 0;
+    for (int row = 0; row < GRID_SIZE; row++) {
+        for (int col = 0; col < GRID_SIZE; col++) {
+            char c = input[index++];
+            if (c == ' ') {
+                checkGrid[row][col] = 0;  // Empty square
+            } else if (isdigit(c)) {
+                checkGrid[row][col] = c - '0';  // Convert digit character to integer
+            } else {
+                cerr << "Invalid character in input string: " << c << endl;
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+bool isSolved(int myGrid[GRID_SIZE][GRID_SIZE]) {
+    // Check rows
+    for (int row = 0; row < GRID_SIZE; row++) {
+        vector<bool> seen(GRID_SIZE, false);
+        for (int col = 0; col < GRID_SIZE; col++) {
+            int num = myGrid[row][col];
+            if (num < 1 || num > GRID_SIZE || seen[num - 1]) return false;
+            seen[num - 1] = true;
+        }
+    }
+
+    // Check columns
+    for (int col = 0; col < GRID_SIZE; col++) {
+        vector<bool> seen(GRID_SIZE, false);
+        for (int row = 0; row < GRID_SIZE; row++) {
+            int num = myGrid[row][col];
+            if (num < 1 || num > GRID_SIZE || seen[num - 1]) return false;
+            seen[num - 1] = true;
+        }
+    }
+
+    // Check 3x3 subgrids
+    for (int boxRow = 0; boxRow < 3; boxRow++) {
+        for (int boxCol = 0; boxCol < 3; boxCol++) {
+            vector<bool> seen(GRID_SIZE, false);
+            for (int row = 0; row < 3; row++) {
+                for (int col = 0; col < 3; col++) {
+                    int num = myGrid[3 * boxRow + row][3 * boxCol + col];
+                    if (num < 1 || num > GRID_SIZE || seen[num - 1]) return false;
+                    seen[num - 1] = true;
+                }
+            }
+        }
+    }
+
+    return true;
+}
 
 
 
@@ -305,6 +383,7 @@ char gameLevel(){
         gamePart("line_small_left");
         colorSet(15);
         cout << "SUDOKU";
+        colorSet(4);
         gamePart("line_small_right");
         colorSet(13);
         cout << setw(29) << right << "SELECT A DIFFICULTY" << endl;
@@ -385,7 +464,7 @@ void setPuzzle(int level)
         memcpy(fullGrid, grid, sizeof(grid));
 
     // Remove numbers to create the puzzle
-        int attempts = 30;
+        int attempts = rand() % 10 + 30;
         removeNumbers(grid, attempts);
         puzzle = convertGridToString(grid);
         highlight = convertHighlightToString(grid);
@@ -401,7 +480,7 @@ void setPuzzle(int level)
         memcpy(fullGrid, grid, sizeof(grid));
 
     // Remove numbers to create the puzzle
-        int attempts = 40;
+        int attempts = rand() % 10 + 40;
         removeNumbers(grid, attempts);
         puzzle = convertGridToString(grid);
         highlight = convertHighlightToString(grid);
@@ -417,7 +496,7 @@ void setPuzzle(int level)
         memcpy(fullGrid, grid, sizeof(grid));
 
     // Remove numbers to create the puzzle
-        int attempts = 50;
+        int attempts = rand() % 10 + 50;
         removeNumbers(grid, attempts);
         puzzle = convertGridToString(grid);
         highlight = convertHighlightToString(grid);
@@ -604,6 +683,7 @@ void mainGame()
         colorSet(11);
         cout << "Progress: ";
         colorSet(15);
+        /*
         switch (level){
             case 1:
                 cout << correct << "/81";
@@ -614,10 +694,12 @@ void mainGame()
             default:
                 showProgressHardMode(final_progress);
         }
+        */
+        cout << correct << "/81";
 
         cout << endl;
         colorSet(14);
-        cout << " Press";
+        cout << "Press";
         colorSet(12);
         cout << " [Esc]";
         colorSet(15);
@@ -634,7 +716,7 @@ void mainGame()
         colorSet(13);
         cout << " Better luck next time!" << endl;
         colorSet(15);
-        cout << " By the way, thats the solution." << endl << endl;
+        cout << " By the way, that's the solution." << endl << endl;
         colorSet(7);
         cout << " [Press any key to exit the game]";
         getch();
@@ -792,14 +874,20 @@ void checkGame()
     correct = 0;
     for (int sudokuPointing = 0; sudokuPointing < sudokuPuzzleSize; sudokuPointing ++)
     {
-        if (sudokuPuzzle[sudokuPointing] == sudokuSolution[sudokuPointing]){
+        if (sudokuPuzzle[sudokuPointing] != " "){
             correct ++;
         }
     }
 
     if (correct == sudokuPuzzleSize)
     {
-        sudokuStatus = "finished";
+        string input = parseArrayToString();
+        if(parseStringToGrid(input)){
+            if(isSolved(checkGrid))
+            {
+                sudokuStatus = "finished";
+            }
+        }
     }
     mainGame();
 }
